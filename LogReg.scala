@@ -1,83 +1,75 @@
-//////////////////////////////////////////////
-// LOGISTIC REGRESSION            ///////////
-////////////////////////////////////////////
+import org.apache.spark.ml.classification.LogisticRegression
+import org.apache.spark.sql.SparkSession
 
-//  We will be working with a fake advertising data set, indicating whether or not a particular internet user clicked on an Advertisement. We will try to create a model that will predict whether or not they will click on an ad based off the features of that user.
-//  This data set contains the following features:
-//    'Daily Time Spent on Site': consumer time on site in minutes
-//    'Age': cutomer age in years
-//    'Area Income': Avg. Income of geographical area of consumer
-//    'Daily Internet Usage': Avg. minutes a day consumer is on the internet
-//    'Ad Topic Line': Headline of the advertisement
-//    'City': City of consumer
-//    'Male': Whether or not consumer was male
-//    'Country': Country of consumer
-//    'Timestamp': Time at which consumer clicked on Ad or closed window
-//    'Clicked on Ad': 0 or 1 indicated clicking on Ad
+import org.apache.log4j._
+Logger.getLogger("org").setLevel(Level.ERROR)
 
-////////////////////////
-/// GET THE DATA //////
-//////////////////////
+val spark = SparkSession.builder().getOrCreate()
+val data = (spark.read.option("header","true")
+            .option("inferSchema","true")
+            .format("csv")
+            .load("titanic.csv"))
 
-// Import SparkSession and Logistic Regression
-
-// Optional: Use the following code below to set the Error reporting
-
-// Create a Spark Session
-
-// Use Spark to read in the Advertising csv file.
-
-// Print the Schema of the DataFrame
+data.printSchema()
 
 ///////////////////////
 /// Display Data /////
 /////////////////////
+val colnames = data.columns
+val firstrow = data.head(1)(0)
+println("\n")
+println("Example Data Row")
+for(ind <- Range(1,colnames.length)){
+  println(colnames(ind))
+  println(firstrow(ind))
+  println("\n")
+}
 
-// Print out a sample row of the data (multiple ways to do this)
+val logregdataall = (data.select(data("Survived").as("label"),
+                    $"Pclass", $"Name", $"Sex", $"Age", $"SibSp", $"Parch",
+                    $"Ticket", $"Fare", $"Embarked"))
 
+val logregdata = logregdataall.na.drop()
 
-////////////////////////////////////////////////////
-//// Setting Up DataFrame for Machine Learning ////
-//////////////////////////////////////////////////
+import org.apache.spark.ml.feature.{VectorAssembler, StringIndexer, VectorIndexer, OneHotEncoder}
+import org.apache.spark.ml.linalg.Vectors
 
-//   Do the Following:
-//    - Rename the Clicked on Ad column to "label"
-//    - Grab the following columns "Daily Time Spent on Site","Age","Area Income","Daily Internet Usage","Timestamp","Male"
-//    - Create a new column called Hour from the Timestamp containing the Hour of the click
+// Converting Strings into numerical values
+val genderIndexer = new StringIndexer().setInputCol("Sex").setOutputCol("SexIndex")
+val embarkIndexer = new StringIndexer().setInputCol("Embarked").setOutputCol("EmbarkIndex")
 
+// Convert numerical value to OneHotEncoder 0 or 1
+val genderEncoder = new OneHotEncoder().setInputCol("SexIndex").setOutputCol("SexVec")
+val embarkEncoder = new OneHotEncoder().setInputCol("EmbarkIndex").setOutputCol("EmbarkVec")
 
+// (label, features)
+val assembler =(new VectorAssembler()
+                .setInputCols(Array("Pclass", "SexVec", "Age", "SibSp", "Parch",
+                "Fare", "EmbarkVec")).setOutputCol("features"))
 
-// Import VectorAssembler and Vectors
+val Array(training, test) = logregdata.randomSplit(Array(0.7,0.3), seed=123)
 
-// Create a new VectorAssembler object called assembler for the feature
-// columns as the input Set the output column to be called features
+import org.apache.spark.ml.Pipeline
 
+val lr = new LogisticRegression()
 
-// Use randomSplit to create a train test split of 70/30
+val pipeline = (new Pipeline().setStages(Array(genderIndexer, embarkIndexer,
+                                               genderEncoder, embarkEncoder,
+                                               assembler, lr)))
 
+val model = pipeline.fit(training)
 
-///////////////////////////////
-// Set Up the Pipeline ///////
-/////////////////////////////
+val results = model.transform(test)
 
-// Import Pipeline
-// Create a new LogisticRegression object called lr
+//
+////////////////////////////
+// MODEL EVALUATION
+///////////////////////////
+import org.apache.spark.mllib.evaluation.MulticlassMetrics
 
-// Create a new pipeline with the stages: assembler, lr
+val predictionAndLabels = results.select($"prediction",$"label").as[(Double, Double)].rdd
 
-// Fit the pipeline to training set.
+val metrics = new MulticlassMetrics(predictionAndLabels)
 
-
-// Get Results on Test Set with transform
-
-////////////////////////////////////
-//// MODEL EVALUATION /////////////
-//////////////////////////////////
-
-// For Metrics and Evaluation import MulticlassMetrics
-
-// Convert the test results to an RDD using .as and .rdd
-
-// Instantiate a new MulticlassMetrics object
-
-// Print out the Confusion matrix
+println("Confusion matrix:")
+println(metrics.confusionMatrix)
