@@ -1,13 +1,12 @@
 ////////////////////////////////////////////
-//// LINEAR REGRESSION EXERCISE ///////////
-/// Complete the commented tasks below ///
-/////////////////////////////////////////
+//// LINEAR REGRESSION          ///////////
+///////////////////////////////////////////
 
 // Import LinearRegression
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.ml.regression.LinearRegression
 
-// Optional: Use the following code below to set the Error reporting
+// set the Error reporting
 import org.apache.log4j._
 Logger.getLogger("org").setLevel(Level.ERROR)
 
@@ -25,8 +24,6 @@ val data = (spark.read.option("header", "true")
 data.printSchema
 
 // Print out an example Row
-// Various ways to do this, just
-// choose whichever way you prefer
 data.show(1)
 
 
@@ -58,7 +55,7 @@ val df = (data.select(data("Yearly Amount Spent").as("label"),
 // Use VectorAssembler to convert the input columns of df
 // to a single output column of an array called "features"
 // Set the input columns from which we are supposed to read the values.
-// Call this new object assembler
+
 val assembler = (new VectorAssembler()
                 .setInputCols(Array("Avg Session Length",
                                     "Time on App",
@@ -78,7 +75,7 @@ val lrModel = lr.fit(output)
 // Print the coefficients and intercept for linear regression
 println(s"Coefficients: ${lrModel.coefficients} Intercept: ${lrModel.intercept}")
 
-// Summarize the model over the training set and print out some metrics!
+// Summarize the model over the training set and print out some metrics
 // Use the .summary method off your model to create an object
 // called trainingSummary
 val trainingSummary = lrModel.summary
@@ -93,4 +90,4 @@ println(s"RMSE: ${trainingSummary.rootMeanSquaredError}")
 println(s"MSE: ${trainingSummary.meanSquaredError}")
 println(s"r2: ${trainingSummary.r2}")
 
-// Great Job!
+
