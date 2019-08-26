@@ -1,8 +1,8 @@
 /////////////////////////////////
-// K MEANS PROJECT EXERCISE ////
+// K MEANS                  ////
 ///////////////////////////////
 
-// Your task will be to try to cluster clients of a Wholesale Distributor
+// Cluster clients of a Wholesale Distributor
 // based off of the sales of some product categories
 
 // Source of the Data
@@ -18,14 +18,10 @@
 // 7)	CHANNEL: customers Channel - Horeca (Hotel/Restaurant/Cafe) or Retail channel (Nominal)
 // 8)	REGION: customers Region- Lisnon, Oporto or Other (Nominal)
 
-////////////////////////////////////
-// COMPLETE THE TASKS BELOW! //////
-//////////////////////////////////
-
 // Import SparkSession
 import org.apache.spark.sql.SparkSession
 
-// Optional: Use the following code below to set the Error reporting
+// Set the Error reporting
 import org.apache.log4j._
 Logger.getLogger("org").setLevel(Level.ERROR)
 
@@ -40,27 +36,23 @@ val data = (spark.read.option("header","true").option("inferSchema","true")
             .csv("Wholesale_customers_data.csv"))
 
 
-// Select the following columns for the training set:
+// Select the columns for the training set:
 // Fresh, Milk, Grocery, Frozen, Detergents_Paper, Delicassen
-// Cal this new subset feature_data
 val feature_data = (data.select($"Fresh", $"Milk", $"Grocery", $"Frozen",
                     $"Detergents_Paper", $"Delicassen"))
 
 // Import VectorAssembler and Vectors
 import org.apache.spark.ml.feature.{VectorAssembler, StringIndexer, VectorIndexer, OneHotEncoder}
 
-// Create a new VectorAssembler object called assembler for the feature
-// columns as the input Set the output column to be called features
-// Remember there is no Label column
+// Create new VectorAssembler object called assembler for the feature
 val assembler =(new VectorAssembler()
                 .setInputCols(Array("Fresh", "Milk", "Grocery", "Frozen", "Detergents_Paper",
                 "Detergents_Paper", "Delicassen")).setOutputCol("features"))
 
 // Use the assembler object to transform the feature_data
-// Call this new data training_data
 val training_data = assembler.transform(feature_data).select("features")
 
-// Create a Kmeans Model with K=3
+// Create a Kmeans Model with K=4
 val kmeans = new KMeans().setK(4).setSeed(1L)
 
 // Fit that model to the training_data
