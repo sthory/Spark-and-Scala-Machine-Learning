@@ -1,9 +1,4 @@
-// PCA Project Exercise
-
-// Complete the tasks below to transform the dataset!
-// Keep in mind there are somethings here we haven't explicitly shown
-// This is because we want you to discover them on your own!
-
+// PCA
 /////////////////////////////////
 // THE DATA SET DESCRIPTION ////
 ///////////////////////////////
@@ -87,17 +82,11 @@
 //
 //     :Date: November, 1995
 
-
-
-//////////////////////////////
-// PROJECT EXERCISE TASKS ///
-////////////////////////////
-
 // Import Spark  and Create a Spark Session
 import org.apache.spark.sql.SparkSession
 
 // SparkSession
-val spark = SparkSession.builder().appName("PCA_Project_Exercise").getOrCreate()
+val spark = SparkSession.builder().appName("PCA").getOrCreate()
 
 
 // Use Spark to read in the Cancer_Data file.
@@ -114,15 +103,6 @@ import org.apache.spark.ml.feature.{PCA,StandardScaler,VectorAssembler}
 
 // Import Vectors from ml.linalg
 import org.apache.spark.ml.linalg.Vectors
-
-// Use VectorAssembler to convert the input columns of the cancer data
-// to a single output column of an array called "features"
-// Set the input columns from which we are supposed to read the values.
-// Call this new object assembler.
-
-
-// Since there are so many columns, you may find this line useful
-// to just pass in to setInputCols
 
 val colnames = (Array("mean radius", "mean texture", "mean perimeter",
                       "mean area", "mean smoothness", "mean compactness",
@@ -141,18 +121,10 @@ val assembler =(new VectorAssembler()
               .setInputCols(colnames)
               .setOutputCol("features"))
 
-// Use the assembler to transform our DataFrame to a single column: features
+// Transform our DataFrame to a single column: features
 val output = assembler.transform(data).select("features")
 
-
-// Often its a good idea to normalize each feature to have unit standard
-// deviation and/or zero mean,vwhen using PCA.
-// This is essentially a pre-step to PCA, but its not always necessary.
-
-// Look at the ml.feature documentation and figure out how to standardize
-// the cancer data set. Refer to the solutions for hints if you get stuck.
-
-// Use StandardScaler on the data
+// StandardScaler on the data
 // Create a new StandardScaler() object called scaler
 // Set the input to the features column and the ouput to a column called
 // scaledFeatures
@@ -163,36 +135,31 @@ val scaler = (new StandardScaler()
               .setWithStd(true)
               .setWithMean(false))
 
-// Compute summary statistics by fitting the StandardScaler.
+// Summary statistics by fitting the StandardScaler.
 // Basically create a new object called scalerModel by using scaler.fit()
 // on the output of the VectorAssembler
 
 val scalerModel = scaler.fit(output)
 
 // Normalize each feature to have unit standard deviation.
-// Use transform() off of this scalerModel object to create your scaledData
+// transform() off of this scalerModel object to create scaledData
 
 val scaledData = scalerModel.transform(output)
 
-// Now its time to use PCA to reduce the features to some principal components
-
 // Create a new PCA() object that will take in the scaledFeatures
-// and output the pcs features, use 4 principal components
-// Then fit this to the scaledData
+// and output the pcs features
 val pca = (new PCA()
   .setInputCol("scaledFeatures")
   .setOutputCol("pcaFeatures")
   .setK(4)
   .fit(scaledData))
 
-// Once your pca has been created and fit, transform the scaledData
-// Call this new dataframe pcaDF
+// Transform the scaledData
 val pcaDF = pca.transform(scaledData)
 
 // Show the new pcaFeatures
 val result = pcaDF.select("pcaFeatures")
 result.show()
 
-// Use .head() to confirm that your output column Array of pcaFeatures
 // only has 4 principal components
 result.head(1)
